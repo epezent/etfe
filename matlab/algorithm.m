@@ -12,7 +12,7 @@ nfft = 2048;
 pcf = 1 / (fs*sum(win.^2));
 
 t = 0:1/fs:10-1/fs;
-x = sin(2*pi*3*t) + sin(2*pi*7*t);% + randn(size(t));
+x = sin(2*pi*25*t) + sin(2*pi*50*t);% + randn(size(t));
 [b,a] = butter(2,0.5);
 y = filter(b,a,x);
 

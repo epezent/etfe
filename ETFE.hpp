@@ -44,7 +44,7 @@ public:
     /// Default Constructor
     FFT() : m_nfft(0), m_cfg(nullptr)  { }
 
-    // Constructor
+    // Constructor (nfft must be even)
     FFT(std::size_t nfft) { resize(nfft); }
 
     // Destructor
@@ -59,13 +59,16 @@ public:
     // Gets the FFT size
     std::size_t size() const { return m_nfft; }
 
-    // Resize the FFT
+    // Resize the FFT (nfft must be even)
     void resize(std::size_t nfft) {
         if (nfft == 0)
             return;
+        nfft = nfft % 2 != 0 ? nfft + 1 : nfft;
         m_nfft = nfft;
-        if (m_cfg != nullptr)
+        if (m_cfg != nullptr) {
             free(m_cfg);
+            m_cfg = nullptr;
+        }
         m_cfg = kiss_fftr_alloc((int)m_nfft, 0, NULL, NULL);
     }
 
@@ -220,6 +223,8 @@ public:
 
     /// (Re)perform full setup
     void setup(std::size_t nsamples, double fs, const std::vector<double>& window, std::size_t noverlap, std::size_t nfft) {
+        // make nfft even
+        nfft = nfft % 2 != 0 ? nfft + 1 : nfft;
         // set provided variables
         m_n    = nsamples;
         m_fs   = fs;
