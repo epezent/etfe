@@ -46,7 +46,7 @@ public:
         static std::normal_distribution<double> distribution(0,1);
 
         static int filter = 0;
-        static double Fc = 250;
+        static double Fc = 100;
         static double Fw = 100;
         static Iir::Butterworth::LowPass<2> butt2lp;  // 0
         static Iir::Butterworth::HighPass<2> butt2hp; // 1
@@ -69,9 +69,9 @@ public:
         ImGui::BeginChild("ChildL", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.5f, -1));
         ImGui::Text("Filter Input / Output");
         ImGui::Separator();
-        ImGui::SliderDouble2("f1 / f2 [Hz]",&f1,0,500,"%.0f");
-        ImGui::SliderDouble2("a1 / a2",&a1,0,10,"%.1f");
-        ImGui::SliderDouble("noise",&ng,0,10,"%.1f");
+        ImGui::SliderDouble2("F1 / F2 [Hz]",&f1,0,500,"%.0f");
+        ImGui::SliderDouble2("A1 / A2",&a1,0,10,"%.1f");
+        ImGui::SliderDouble("Noise",&ng,0,10,"%.1f");
 
         // ImGui::Separator();
         ImGui::ModeSelector(&filter, {"Lowpass","Highpass","Bandpass"});
@@ -151,7 +151,7 @@ public:
                 ImPlot::SetNextPlotLimits(1,500,-100,10);
                 if (ImPlot::BeginPlot("##Bode1","Frequency [Hz]","Magnitude [dB]",ImVec2(-1,-1))) {
                     ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.250f);
-                    ImPlot::PlotShaded("##Mag1",result.f.data(),result.mag.data(),(int)result.f.size(),-100000);
+                    ImPlot::PlotShaded("##Mag1",result.f.data(),result.mag.data(),(int)result.f.size(),-INFINITY);
                     ImPlot::PlotLine("##Mag2",result.f.data(),result.mag.data(),(int)result.f.size());
                     ImPlot::EndPlot();
                 }
@@ -160,7 +160,9 @@ public:
             if (ImGui::BeginTabItem("Phase")) {
                 ImPlot::SetNextPlotLimits(1,500,-180,10);
                 if (ImPlot::BeginPlot("##Bode2","Frequency [Hz]","Phase Angle [deg]",ImVec2(-1,-1))) {
-                    ImPlot::PlotLine("##Phase",result.f.data(),result.phase.data(),(int)result.f.size());
+                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.250f);
+                    ImPlot::PlotShaded("##Phase1",result.f.data(),result.phase.data(),(int)result.f.size(),-INFINITY);
+                    ImPlot::PlotLine("##Phase2",result.f.data(),result.phase.data(),(int)result.f.size());
                     ImPlot::EndPlot();
                 }
                 ImGui::EndTabItem();
@@ -169,10 +171,10 @@ public:
                 ImPlot::SetNextPlotLimits(0,500,0,0.5);
                 if (ImPlot::BeginPlot("##Amp","Frequency [Hz]","Amplitude", ImVec2(-1,-1))) {
                     ImPlot::SetLegendLocation(ImPlotLocation_NorthEast);
-                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.75f);
+                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
                     ImPlot::PlotShaded("x(f)",result.f.data(),result.ampx.data(),(int)result.f.size());
                     ImPlot::PlotLine("x(f)",result.f.data(),result.ampx.data(),(int)result.f.size());
-                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.75f);
+                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
                     ImPlot::PlotShaded("y(f)",result.f.data(),result.ampy.data(),(int)result.f.size());
                     ImPlot::PlotLine("y(f)",result.f.data(),result.ampy.data(),(int)result.f.size());
                     ImPlot::EndPlot();
@@ -188,10 +190,15 @@ public:
                     pyy10[i] = 10*std::log10(result.pyy[i]);
                 }
                 ImPlot::SetNextPlotLimits(0,500,-100,0);
-                if (ImPlot::BeginPlot("##Power","Frequency [Hz]","PSD (dB/Hz)",ImVec2(-1,-1))) {
+                if (ImPlot::BeginPlot("##Power","Frequency [Hz]","Power Spectral Density (dB/Hz)",ImVec2(-1,-1))) {
                     ImPlot::SetLegendLocation(ImPlotLocation_NorthEast);
+                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
+                    ImPlot::PlotShaded("x(f)",result.f.data(),pxx10.data(),(int)result.f.size(),-INFINITY);
                     ImPlot::PlotLine("x(f)",result.f.data(),pxx10.data(),(int)result.f.size());
+                    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
+                    ImPlot::PlotShaded("y(f)",result.f.data(),pyy10.data(),(int)result.f.size(),-INFINITY);
                     ImPlot::PlotLine("y(f)",result.f.data(),pyy10.data(),(int)result.f.size());
+
                     ImPlot::EndPlot();
                 }
                 ImGui::EndTabItem();
@@ -209,8 +216,13 @@ public:
 
     void styleGui() {
 
-        ImVec4 dark_accent  = ImVec4(0.00f, 0.70f, 0.16f, 1.00f); //(0.700f, 0.302f, 0.000f, 1.000f)
-        ImVec4 light_accent = ImVec4(0.50f, 1.00f, 0.00f, 1.00f); //(1.000f, 0.630f, 0.000f, 1.000f)
+        // green
+        // ImVec4 dark_accent  = ImVec4(0.00f, 0.70f, 0.16f, 1.00f); 
+        // ImVec4 light_accent = ImVec4(0.50f, 1.00f, 0.00f, 1.00f);
+
+        // orange
+        ImVec4 dark_accent  = ImVec4(0.700f, 0.302f, 0.000f, 1.000f);
+        ImVec4 light_accent = ImVec4(1.000f, 0.630f, 0.000f, 1.000f);
 
         auto& style = ImGui::GetStyle();
         style.WindowPadding = {6,6};
@@ -247,7 +259,7 @@ public:
         colors[ImGuiCol_SliderGrab]             = dark_accent;
         colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
         colors[ImGuiCol_Button]                 = dark_accent;
-        colors[ImGuiCol_ButtonHovered]          = dark_accent;
+        colors[ImGuiCol_ButtonHovered]          = light_accent;
         colors[ImGuiCol_ButtonActive]           = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
         colors[ImGuiCol_Header]                 = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
         colors[ImGuiCol_HeaderHovered]          = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
