@@ -1,3 +1,5 @@
+#define MAHI_GUI_NO_CONSOLE
+
 #include <random>
 #include <Mahi/Gui.hpp>
 #include <Mahi/Util.hpp>
