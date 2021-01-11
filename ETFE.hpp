@@ -67,13 +67,11 @@ public:
         if (m_cfg != nullptr)
             free(m_cfg);
         m_cfg = kiss_fftr_alloc((int)m_nfft, 0, NULL, NULL);
-        m_in.resize(m_nfft);
     }
 
 private:
-    std::size_t          m_nfft; ///< FFT size
-    std::vector<double>  m_in;   ///< padded input when n < m_nfft
-    kiss_fftr_cfg        m_cfg;  ///< KISSFFT plan
+    std::size_t    m_nfft; ///< FFT size
+    kiss_fftr_cfg  m_cfg;  ///< KISSFFT plan
 };
 
 //-----------------------------------------------------------------------------
