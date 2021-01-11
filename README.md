@@ -35,9 +35,9 @@ result.phase;
 
 ## Dependencies
 
-[KISS FFT](https://github.com/mborgerding/kissfft) - other FFT packages should be easily substitutable 
-[mahi-gui](https://github.com/mahilab/mahi-gui) - for filter demo only
-[IIR](https://github.com/berndporr/iir1) - for filter demo only
+- [KISS FFT](https://github.com/mborgerding/kissfft) - other FFT packages should be easily substitutable 
+- [mahi-gui](https://github.com/mahilab/mahi-gui) - for filter demo only
+- [IIR](https://github.com/berndporr/iir1) - for filter demo only
 
 ## Resources
 
