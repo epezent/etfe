@@ -1,10 +1,10 @@
 # etfe
 
-`ETFE.hpp` emulates output from MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate between input x and output y `txy`, the power spectral densities `psdx` and `psdy`, and the cross spectral density `csdxy`. By default, it behaves exactly as MATLAB's functions, and similarly can be provided with specified windows, overlap, and FFT sizes. The output has been tested to exactly match that of MATLAB's (see `matlab\test.m`). 
+`ETFE.hpp` emulates MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate between input x and output y `txy`, the power spectral densities `psdx` and `psdy`, and the cross spectral density `csdxy`. By default, it behaves exactly as MATLAB's functions, and similarly can be provided with specified windows, overlap, and FFT sizes. The output has been tested to exactly match that of MATLAB's (see `matlab\test.m`). 
 
 **Note:** *Currently, only real-valued 1D sample inputs are supported*.
 
-# Usage
+## Usage
 
 MATLAB:
 ```matlab
