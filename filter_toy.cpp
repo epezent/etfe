@@ -96,17 +96,17 @@ public:
             }
         }
         else if (mode == 1) {
-            static std::vector<double> psdx10, psdy10;
-            psdx10.resize(result.psdx.size());
-            psdy10.resize(result.psdy.size());
-            for (int i = 0; i < psdx10.size(); ++i) {
-                psdx10[i] = 10*std::log10(result.psdx[i]);
-                psdy10[i] = 10*std::log10(result.psdy[i]);
+            static std::vector<double> pxx10, pyy10;
+            pxx10.resize(result.pxx.size());
+            pyy10.resize(result.pyy.size());
+            for (int i = 0; i < pxx10.size(); ++i) {
+                pxx10[i] = 10*std::log10(result.pxx[i]);
+                pyy10[i] = 10*std::log10(result.pyy[i]);
             }
             ImPlot::SetNextPlotLimits(0,500,-100,0);
             if (ImPlot::BeginPlot("##Power","Frequency [Hz]","PSD (dB/Hz)")) {
-                ImPlot::PlotLine("x(f)",result.f.data(),psdx10.data(),(int)result.f.size());
-                ImPlot::PlotLine("y(f)",result.f.data(),psdy10.data(),(int)result.f.size());
+                ImPlot::PlotLine("x(f)",result.f.data(),pxx10.data(),(int)result.f.size());
+                ImPlot::PlotLine("y(f)",result.f.data(),pyy10.data(),(int)result.f.size());
                 ImPlot::EndPlot();
             }
         }

@@ -120,10 +120,10 @@ public:
         std::size_t size() const {return m_size; }
 
         std::vector<double>  f;     ///< freqeuncies [Hz]
-        std::vector<double>  psdx;  ///< power spectral density of input x
-        std::vector<double>  psdy;  ///< power spectral density of output y
-        std::vector<complex> csdxy; ///< cross power spectral density of input x and output y
-        std::vector<complex> txy;   ///< transfer function estimate for input x and output y (i.e. conj(csdxy) ./ psdx)
+        std::vector<double>  pxx;   ///< power spectral density of input x
+        std::vector<double>  pyy;   ///< power spectral density of output y
+        std::vector<complex> pxy;   ///< cross power spectral density of input x and output y
+        std::vector<complex> txy;   ///< transfer function estimate for input x and output y (i.e. conj(pxy) ./ pxx)
         std::vector<double>  mag;   ///< transfer function magnitude (i.e 20*log10(abs(txy)))
         std::vector<double>  phase; ///< transfer function phase (i.e. 180/pi*angle(txy))
         std::vector<double>  ampx;  ///< amplitude spectrum of x
@@ -137,14 +137,14 @@ public:
         void reset() {
             std::fill(ampx.begin(), ampx.end(), 0);
             std::fill(ampy.begin(), ampy.end(), 0);
-            std::fill(psdx.begin(), psdx.end(), 0);
-            std::fill(psdy.begin(), psdy.end(), 0);
-            std::fill(csdxy.begin(), csdxy.end(), complex(0,0));
+            std::fill(pxx.begin(), pxx.end(), 0);
+            std::fill(pyy.begin(), pyy.end(), 0);
+            std::fill(pxy.begin(), pxy.end(), complex(0,0));
         }
         /// Resize the result buffers
         void resize(std::size_t size) {
             m_size = size;
-            f.resize(m_size);   psdx.resize(m_size);  psdy.resize(m_size); csdxy.resize(m_size); txy.resize(m_size); 
+            f.resize(m_size);   pxx.resize(m_size);  pyy.resize(m_size); pxy.resize(m_size); txy.resize(m_size); 
             mag.resize(m_size); phase.resize(m_size); ampx.resize(m_size); ampy.resize(m_size);
         }
     private:
@@ -188,9 +188,9 @@ public:
                 const double absyi = std::abs(m_outy[i]);
                 // power spectral densities
                 const double psdScale = (1 + (i > 0 && i < m_fft.size()/2+1)) * m_pf;
-                m_r.psdx[i]  += absxi * absxi * psdScale;          
-                m_r.psdy[i]  += absyi * absyi * psdScale;  
-                m_r.csdxy[i] += m_outx[i] * std::conj(m_outy[i]) * psdScale;     
+                m_r.pxx[i] += absxi * absxi * psdScale;          
+                m_r.pyy[i] += absyi * absyi * psdScale;  
+                m_r.pxy[i] += m_outx[i] * std::conj(m_outy[i]) * psdScale;     
                 // amplitudes
                 const double ampScale = 1.0 / (m_fft.size()/2) * m_af; 
                 m_r.ampx[i] += absxi * ampScale;
@@ -199,7 +199,7 @@ public:
         }
         // compute txy, mag, and phase
         for (std::size_t i = 0; i < m_fft.size()/2+1; ++i) {
-            m_r.txy[i]   = std::conj(m_r.csdxy[i]) / m_r.psdx[i];
+            m_r.txy[i]   = std::conj(m_r.pxy[i]) / m_r.pxx[i];
             m_r.mag[i]   = 20*log10(std::abs(m_r.txy[i]));
             m_r.phase[i] = 180/pi * std::arg(m_r.txy[i]);
         } 

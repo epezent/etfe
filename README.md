@@ -1,6 +1,6 @@
 # etfe
 
-`ETFE.hpp` emulates MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate between input x and output y `txy`, the power spectral densities `psdx` and `psdy`, and the cross spectral density `csdxy`. By default, it behaves exactly as MATLAB's functions, and similarly can be provided with specified windows, overlap, and FFT sizes. The output has been tested to precisely match that of MATLAB's (see `matlab\test.m`). 
+`ETFE.hpp` emulates MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate between input x and output y `txy`, the power spectral densities `pxx` and `pyy`, and the cross spectral density `pxy`. By default, it behaves exactly as MATLAB's functions, and similarly can be provided with specified windows, overlap, and FFT sizes. The output has been tested to precisely match that of MATLAB's (see `matlab\test.m`). 
 
 **Note:** *Currently, only real-valued 1D sample inputs are supported*.
 
@@ -8,11 +8,11 @@
 
 MATLAB
 ```matlab
-[psdx,f]  = pwelch(x,[],[],[],fs);
-[csdxy,f] = cpsd(x,y,[],[],[],fs);
-[txy,f]   = tfestimate(x,y,[],[],[],fs);
-mag       = 20*log10(abs(txy));
-phase     = 180/pi*angle(txy);
+[pxx,f] = pwelch(x,[],[],[],fs);
+[pxy,f] = cpsd(x,y,[],[],[],fs);
+[txy,f] = tfestimate(x,y,[],[],[],fs);
+mag     = 20*log10(abs(txy));
+phase   = 180/pi*angle(txy);
 ```
 
 ETFE.hpp
@@ -22,8 +22,8 @@ ETFE::Result& result = etfe.estimate(x,y);
 
 result.f;
 result.txy;
-result.psdx;
-result.csdxy;
+result.pxx;
+result.pxy;
 result.mag;
 result.phase;
 ```
