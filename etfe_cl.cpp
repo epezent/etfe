@@ -23,9 +23,9 @@ int main(int argc, char *argv[])
     Options options("etfe.exe","Emperical Transfer Function Estimate");
     options.add_options()
         ("h,help",      "Produces help message")
-        ("d,data",      "Filepath to data in CSV format", value<std::string>())
-        ("n,nsammples", "Number of samples",              value<int>())
-        ("f,fs",        "Sampling frequency",             value<double>());
+        ("d,data",      "Filepath to {n x 3} data in CSV format with column headers [Time][Input][Output]", value<std::string>())
+        ("n,nsammples", "Number of samples in the input and output (i.e. number of rows excluding header)", value<int>())
+        ("f,fs",        "Sampling frequency in Hz",                                                         value<double>());
     auto cl = options.parse(argc, argv);
     if (cl.count("h")) {
         print("{}",options.help());
@@ -36,15 +36,19 @@ int main(int argc, char *argv[])
         int n            = cl["n"].as<int>();
         double fs        = cl["f"].as<double>();
         CsvData csv(n,3);
-        csv_read_rows(data,csv,1);
-        ETFE etfe(n,fs);
-        auto& result = etfe(csv.data[1].data(), csv.data[2].data());
-
-        for (int i = 0; i < result.size(); ++i) 
-            print("{: .4f} {} {:.4f}i",result.txy[i].real(),result.txy[i].imag() < 0 ? "-" : "+",std::abs(result.txy[i].imag()));       
+        if (csv_read_rows(data,csv,1)) {
+            ETFE etfe(n,fs);      
+            auto& result = etfe.estimate(csv.data[1].data(), csv.data[2].data());
+            std::cout << result.size();
+            for (int i = 0; i < result.size(); ++i) 
+                print("{: .4f} {} {:.4f}i",result.txy[i].real(),result.txy[i].imag() < 0 ? "-" : "+",std::abs(result.txy[i].imag()));  
+        }
+        else {
+            print("Failed to open data file: {}", data);
+        }     
     }
     else {
-        print("Not enough command line arguments provided!");
+        print("Not enough command line arguments provided");
         print("{}",options.help());
     }
     return 0;

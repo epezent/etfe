@@ -1,4 +1,49 @@
 # etfe
 
-The class in `ETFE.hpp` emulates output from MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate `txy`, the power spectral density of the input x and output y `psdx` and `psdy`, and the cross spectral density of x and y `csdxy`. By default, it behaves exactly as MATLAB's functions, but similarly can be provided with specified FFT windows, overlaps, and FFT sizes.
+`ETFE.hpp` emulates output from MATLAB's `tfestimate`, `pwelch`, and `cpsd` functions. It calculates the experimental transfer function estimate between input x and output y `txy`, the power spectral densities `psdx` and `psdy`, and the cross spectral density `csdxy`. By default, it behaves exactly as MATLAB's functions, and similarly can be provided with specified windows, overlap, and FFT sizes. The output has been tested to exactly match that of MATLAB's (see `matlab\test.m`). 
 
+**Note:** *Currently, only real-valued 1D sample inputs are supported*.
+
+# Usage
+
+MATLAB:
+```matlab
+[psdx,f]  = pwelch(x,[],[],[],fs);
+[csdxy,f] = cpsd(x,y,[],[],[],fs);
+[txy,f]   = tfestimate(x,y,[],[],[],fs);
+mag       = 20*log10(abs(txy));
+phase     = 180/pi*angle(txy);
+```
+
+ETFE.hpp
+```cpp
+ETFE etfe(nsamples,fs);
+ETFE::Result& result = etfe.estimate(x,y);
+
+result.f;
+result.txy;
+result.psdx;
+result.csdxy;
+result.mag;
+result.phase;
+```
+
+## Example Apps
+
+- `etfe_cl.cpp`    - command line interface to compute ETFE from CSV files
+- `filter_toy.cpp` - interactive spectrum and Bode plots for filters
+
+## Dependencies
+
+[KISS FFT](https://github.com/mborgerding/kissfft) - other FFT packages should be easily substitutable 
+[mahi-gui](https://github.com/mahilab/mahi-gui) - for filter demo only
+[IIR](https://github.com/berndporr/iir1) - for filter demo only
+
+## Resources
+
+https://www.mathworks.com/matlabcentral/answers/29641-quetsions-about-matlab-pwelch-implementation
+https://www.gaussianwaves.com/2015/11/interpreting-fft-results-complex-dft-frequency-bins-and-fftshift/
+https://stackoverflow.com/questions/14536950/applying-kiss-fft-on-audio-samples-and-getting-nan-output
+http://www.iowahills.com/FFTCode.html
+https://community.sw.siemens.com/s/article/window-correction-factors
+https://www.mathworks.com/matlabcentral/answers/372516-calculate-windowing-correction-factor
