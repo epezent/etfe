@@ -33,6 +33,8 @@ result.phase;
 - `etfe_cl.cpp`    - command line interface to compute ETFE from CSV files
 - `filter_toy.cpp` - interactive spectrum and Bode plots for filters
 
+![filter_toy](https://user-images.githubusercontent.com/29577475/104275075-c9446700-5467-11eb-8d86-19c2688b1951.gif)
+
 ## Dependencies
 
 - [KISS FFT](https://github.com/mborgerding/kissfft) - other FFT packages should be easily substitutable 
