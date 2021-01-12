@@ -17,9 +17,10 @@ public:
     FilterToy() : 
         Application()
     { 
-        ImGui::StyleColorsMahiDark1();
         styleGui();
     }
+
+    
 
     void update() override {
 
@@ -37,10 +38,8 @@ public:
         constexpr double Fs = 1000;
         constexpr double dt = 1.0 / Fs;
 
-        static double f1 = 25;
-        static double f2 = 50;
-        static double a1 = 0.5;
-        static double a2 = 0.5;
+        static double f[] = {25,50};
+        static double a[] = {0.5,0.5};
 
         static double ng = 1;
         static std::vector<double> noise(N);
@@ -48,44 +47,51 @@ public:
         static std::normal_distribution<double> distribution(0,1);
 
         static int filter = 0;
-        static double Fc = 100;
-        static double Fw = 100;
-        static Iir::Butterworth::LowPass<2> butt2lp;  // 0
+        static double Fc[] = {100,100};
+        static Iir::Butterworth::LowPass<2>  butt2lp; // 0
         static Iir::Butterworth::HighPass<2> butt2hp; // 1
         static Iir::Butterworth::BandPass<2> butt2bp; // 2
+        static Iir::Butterworth::BandStop<2> butt2bs; // 3
 
         if (init) {
             // generate static noise
             for (auto& n : noise)
                 n = distribution(generator);
             // initialize filters
-            butt2lp.setup(Fs,Fc);
-            butt2hp.setup(Fs,Fc);
-            butt2bp.setup(Fs,Fc,Fw);
+            butt2lp.setup(Fs,Fc[0]);
+            butt2hp.setup(Fs,Fc[0]);
+            butt2bp.setup(Fs,Fc[0],Fc[1]);
+            butt2bs.setup(Fs,Fc[0],Fc[1]);
             init = false;
         }
 
         // gui inputs
+        static bool signal_need_update = true;
+        static bool etfe_need_update   = true;
+
         ImGui::SetNextWindowSize(ImVec2(960,540), ImGuiCond_FirstUseEver);
         ImGui::Begin("Filter Toy",&open, ImGuiWindowFlags_NoCollapse);
         ImGui::BeginChild("ChildL", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.5f, -1));
         ImGui::Text("Filter Input / Output");
         ImGui::Separator();
-        ImGui::SliderDouble2("F1 / F2 [Hz]",&f1,0,500,"%.0f");
-        ImGui::SliderDouble2("A1 / A2",&a1,0,10,"%.1f");
-        ImGui::SliderDouble("Noise",&ng,0,10,"%.1f");
+        
+        ImGui::SliderDouble2("F1 / F2",f,0,500,"%.0f Hz");
+        ImGui::SliderDouble2("A1 / A2",a,0,10,"%.1f");
+        ImGui::SliderDouble("Noise",&ng,0,10,"%.1f");        
 
-        // ImGui::Separator();
-        ImGui::ModeSelector(&filter, {"Lowpass","Highpass","Bandpass"});
-        if (filter == 2) {
-            if (ImGui::SliderDouble2("Fc / Fw [Hz]",&Fc,1,500))
-                butt2bp.setup(Fs,Fc,Fw);
+        ImGui::Combo("Filter Type", &filter,"LowPass\0HighPass\0BandPass\0BandStop\0");
+        if (filter > 1) {
+            if (ImGui::SliderDouble2("Fc / Fw",Fc,1,499,"%.0f Hz")) {
+                butt2bp.setup(Fs,Fc[0],Fc[1]);
+                butt2bs.setup(Fs,Fc[0],Fc[1]);
+            }
         }
         else {
-            if (ImGui::SliderDouble("Fc [Hz]",&Fc,1,500))
-                butt2lp.setup(Fs,Fc);
+            if (ImGui::SliderDouble("Fc",Fc,1,499,"%.0f Hz")) {
+                butt2lp.setup(Fs,Fc[0]);
+                butt2hp.setup(Fs,Fc[0]);
+            }
         }
-        // ImGui::Separator();
         // reset filters
         butt2lp.reset();
         butt2hp.reset();
@@ -96,13 +102,17 @@ public:
         static double t[N];
         for (int i = 0; i < N; ++i) {            
             t[i] = i * dt;
-            x[i] = a1*sin(2*PI*f1*t[i]) + a2*sin(2*PI*f2*t[i]) + ng * noise[i];
-            y[i] = filter == 0 ? butt2lp.filter(x[i]) : filter == 1 ? butt2hp.filter(x[i]) : butt2bp.filter(x[i]);
+            x[i] = a[0]*sin(2*PI*f[0]*t[i]) + a[1]*sin(2*PI*f[1]*t[i]) + ng * noise[i];
+            y[i] = filter == 0 ? butt2lp.filter(x[i]) : 
+                   filter == 1 ? butt2hp.filter(x[i]) : 
+                   filter == 2 ? butt2bp.filter(x[i]) : 
+                                 butt2bs.filter(x[i]);
         }
 
         // plot waveforms
         ImPlot::SetNextPlotLimits(0,10,-10,10);
         if (ImPlot::BeginPlot("##Filter","Time [s]","Signal",ImVec2(-1,-1))) {
+            ImPlot::SetLegendLocation(ImPlotLocation_NorthEast);
             ImPlot::PlotLine("x(t)", t, x, N);
             ImPlot::PlotLine("y(t)", t, y, N);
             ImPlot::EndPlot();
@@ -118,30 +128,29 @@ public:
         static int infft          = 4;
         static int nfft_opts[]    = {100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000};
         static float overlap      = 0.5f;
-        static bool need_update   = false;
 
         static ETFE etfe(N, Fs, hamming(nwindow_opts[inwindow]), nwindow_opts[inwindow]/2, nfft_opts[infft]);        
 
         ImGui::Text("Transfer Function");
         ImGui::Separator();
-        if (ImGui::Combo("Window Method", &window,"hamming\0hann\0winrect\0"))                                           
-            need_update = true;
-        if (ImGui::Combo("Window Size", &inwindow,"100\0""200\0""500\0""1000\0""2000\0""5000\0""10000\0"))               
-            need_update = true;
-        if (ImGui::SliderFloat("Window Overlap",&overlap,0,1))                                                                  
-            need_update = true;
         if (ImGui::Combo("FFT Size", &infft, "100\0""200\0""500\0""1000\0""2000\0""5000\0""10000\0""20000\0""50000\0")) {
             inwindow = infft < inwindow ? infft : inwindow;
-            need_update = true;
+            etfe_need_update = true;
         }
+        if (ImGui::Combo("Window Type", &window,"hamming\0hann\0winrect\0"))                                           
+            etfe_need_update = true;
+        if (ImGui::Combo("Window Size", &inwindow,"100\0""200\0""500\0""1000\0""2000\0""5000\0""10000\0"))               
+            etfe_need_update = true;
+        if (ImGui::SliderFloat("Window Overlap",&overlap,0,1,"%.2f"))                                                                  
+            etfe_need_update = true;
             
-        if (need_update) {
+        if (etfe_need_update) {
             infft = inwindow > infft ? inwindow : infft;
             int nwindow  = nwindow_opts[inwindow];
             int noverlap = (int)(nwindow * overlap);
             int nfft     = nfft_opts[infft];
             etfe.setup(N,Fs,window == 0 ? hamming(nwindow) : window == 1 ? hann(nwindow) : winrect(nwindow), noverlap, nfft);
-            need_update = false;
+            etfe_need_update = false;
         }
 
         auto& result = etfe.estimate(x,y);    
@@ -174,10 +183,10 @@ public:
                 if (ImPlot::BeginPlot("##Amp","Frequency [Hz]","Amplitude", ImVec2(-1,-1))) {
                     ImPlot::SetLegendLocation(ImPlotLocation_NorthEast);
                     ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
-                    ImPlot::PlotShaded("x(f)",result.f.data(),result.ampx.data(),(int)result.f.size());
+                    ImPlot::PlotShaded("x(f)",result.f.data(),result.ampx.data(),(int)result.f.size(),-INFINITY);
                     ImPlot::PlotLine("x(f)",result.f.data(),result.ampx.data(),(int)result.f.size());
                     ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
-                    ImPlot::PlotShaded("y(f)",result.f.data(),result.ampy.data(),(int)result.f.size());
+                    ImPlot::PlotShaded("y(f)",result.f.data(),result.ampy.data(),(int)result.f.size(),-INFINITY);
                     ImPlot::PlotLine("y(f)",result.f.data(),result.ampy.data(),(int)result.f.size());
                     ImPlot::EndPlot();
                 }
@@ -223,8 +232,12 @@ public:
         // ImVec4 light_accent = ImVec4(0.50f, 1.00f, 0.00f, 1.00f);
 
         // orange
-        ImVec4 dark_accent  = ImVec4(0.700f, 0.302f, 0.000f, 1.000f);
-        ImVec4 light_accent = ImVec4(1.000f, 0.630f, 0.000f, 1.000f);
+        ImVec4 dark_accent  = ImVec4(0.85f, 0.37f, 0.00f, 1.00f);
+        ImVec4 light_accent = ImVec4(1.00f, 0.63f, 0.00f, 1.00f);
+
+        // purple
+        // ImVec4 dark_accent = ImVec4(0.416f, 0.000f, 1.000f, 1.000f);
+        // ImVec4 light_accent = ImVec4(0.691f, 0.484f, 0.973f, 1.000f);
 
         auto& style = ImGui::GetStyle();
         style.WindowPadding = {6,6};
@@ -234,28 +247,29 @@ public:
         style.ItemInnerSpacing = {6,6};
         style.ScrollbarSize = 16;
         style.GrabMinSize = 8;
-        style.WindowBorderSize = style.ChildBorderSize = style.PopupBorderSize = style.FrameBorderSize = style.TabBorderSize = 0;
+        style.WindowBorderSize = style.ChildBorderSize = style.PopupBorderSize = style.TabBorderSize = 0;
+        style.FrameBorderSize = 1;
         style.WindowRounding = style.ChildRounding = style.PopupRounding = style.ScrollbarRounding = style.GrabRounding = style.TabRounding = 4;
 
 
         ImVec4* colors = ImGui::GetStyle().Colors;
-        colors[ImGuiCol_Text]                   = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
-        colors[ImGuiCol_TextDisabled]           = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-        colors[ImGuiCol_WindowBg]               = ImVec4(0.21f, 0.21f, 0.24f, 1.00f);
-        colors[ImGuiCol_ChildBg]                = ImVec4(0.07f, 0.07f, 0.10f, 0.00f);
-        colors[ImGuiCol_PopupBg]                = ImVec4(0.21f, 0.21f, 0.24f, 1.00f);
+        colors[ImGuiCol_Text]                   = ImVec4(0.89f, 0.89f, 0.92f, 1.00f);
+        colors[ImGuiCol_TextDisabled]           = ImVec4(0.38f, 0.45f, 0.64f, 1.00f);
+        colors[ImGuiCol_WindowBg]               = ImVec4(0.20f, 0.21f, 0.27f, 1.00f);
+        colors[ImGuiCol_ChildBg]                = ImVec4(0.20f, 0.21f, 0.27f, 0.00f);
+        colors[ImGuiCol_PopupBg]                = ImVec4(0.20f, 0.21f, 0.27f, 1.00f);
         colors[ImGuiCol_Border]                 = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-        colors[ImGuiCol_BorderShadow]           = ImVec4(0.92f, 0.91f, 0.88f, 0.00f);
+        colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.06f);
         colors[ImGuiCol_FrameBg]                = ImVec4(1.00f, 1.00f, 1.00f, 0.02f);
-        colors[ImGuiCol_FrameBgHovered]         = dark_accent;
+        colors[ImGuiCol_FrameBgHovered]         = light_accent;
         colors[ImGuiCol_FrameBgActive]          = light_accent;
         colors[ImGuiCol_TitleBg]                = dark_accent;
         colors[ImGuiCol_TitleBgActive]          = dark_accent;
-        colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(1.00f, 0.98f, 0.95f, 0.75f);
+        colors[ImGuiCol_TitleBgCollapsed]       = dark_accent;
         colors[ImGuiCol_MenuBarBg]              = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-        colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.21f, 0.21f, 0.24f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-        colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+        colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.20f, 0.21f, 0.27f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.89f, 0.89f, 0.93f, 0.27f);
+        colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.89f, 0.89f, 0.93f, 0.55f);
         colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
         colors[ImGuiCol_CheckMark]              = dark_accent;
         colors[ImGuiCol_SliderGrab]             = dark_accent;
@@ -263,24 +277,24 @@ public:
         colors[ImGuiCol_Button]                 = dark_accent;
         colors[ImGuiCol_ButtonHovered]          = light_accent;
         colors[ImGuiCol_ButtonActive]           = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-        colors[ImGuiCol_Header]                 = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-        colors[ImGuiCol_HeaderHovered]          = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-        colors[ImGuiCol_HeaderActive]           = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+        colors[ImGuiCol_Header]                 = dark_accent;
+        colors[ImGuiCol_HeaderHovered]          = light_accent;
+        colors[ImGuiCol_HeaderActive]           = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
         colors[ImGuiCol_Separator]              = dark_accent;
-        colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
+        colors[ImGuiCol_SeparatorHovered]       = light_accent;
         colors[ImGuiCol_SeparatorActive]        = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-        colors[ImGuiCol_ResizeGrip]             = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-        colors[ImGuiCol_ResizeGripHovered]      = dark_accent;
-        colors[ImGuiCol_ResizeGripActive]       = light_accent;
+        colors[ImGuiCol_ResizeGrip]             = dark_accent;
+        colors[ImGuiCol_ResizeGripHovered]      = light_accent;
+        colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
         colors[ImGuiCol_Tab]                    = ImVec4(1.00f, 1.00f, 1.00f, 0.02f);
-        colors[ImGuiCol_TabHovered]             = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
+        colors[ImGuiCol_TabHovered]             = light_accent;
         colors[ImGuiCol_TabActive]              = dark_accent;
         colors[ImGuiCol_TabUnfocused]           = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
         colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
         colors[ImGuiCol_DockingPreview]         = ImVec4(0.85f, 0.85f, 0.85f, 0.28f);
         colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
-        colors[ImGuiCol_PlotLines]              = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
-        colors[ImGuiCol_PlotLinesHovered]       = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
+        colors[ImGuiCol_PlotLines]              = light_accent;
+        colors[ImGuiCol_PlotLinesHovered]       = light_accent;
         colors[ImGuiCol_PlotHistogram]          = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
         colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
         colors[ImGuiCol_TableHeaderBg]          = ImVec4(0.19f, 0.19f, 0.20f, 1.00f);
@@ -294,6 +308,8 @@ public:
         colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
         colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
+
+
 
         ImVec4* pcolors = ImPlot::GetStyle().Colors;
         pcolors[ImPlotCol_Line]          = IMPLOT_AUTO_COL;
@@ -317,9 +333,17 @@ public:
         pcolors[ImPlotCol_YAxisGrid2]    = IMPLOT_AUTO_COL;
         pcolors[ImPlotCol_YAxis3]        = IMPLOT_AUTO_COL;
         pcolors[ImPlotCol_YAxisGrid3]    = IMPLOT_AUTO_COL;
-        pcolors[ImPlotCol_Selection]     = ImVec4(1.00f, 0.00f, 0.91f, 1.00f);
+        pcolors[ImPlotCol_Selection]     = ImVec4(0.000f, 0.571f, 1.000f, 1.000f);
         pcolors[ImPlotCol_Query]         = IMPLOT_AUTO_COL;
         pcolors[ImPlotCol_Crosshairs]    = IMPLOT_AUTO_COL;
+
+        auto& pstyle = ImPlot::GetStyle();
+        // pstyle.AntiAliasedLines = true;
+        pstyle.PlotPadding = pstyle.LegendPadding = {12,12};
+        pstyle.LabelPadding = pstyle.LegendInnerPadding = {6,6};
+        pstyle.FitPadding   = {0,0.1f};
+        pstyle.LegendSpacing = {2,2};
+
 
         static const ImVec4 colormap[2] = {
             dark_accent,

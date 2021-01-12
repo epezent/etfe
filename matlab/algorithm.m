@@ -8,12 +8,12 @@ w    = 2000;
 o    = w/2;
 win  = hamming(w);
 k    = (o - w + n) / o;
-nfft = 2048;
+nfft = 2000;
 pcf = 1 / (fs*sum(win.^2));
 
 t = 0:1/fs:10-1/fs;
-x = sin(2*pi*25*t) + sin(2*pi*50*t);% + randn(size(t));
-[b,a] = butter(2,0.5);
+x = 0.5 * sin(2*pi*25*t) + 0.5 * sin(2*pi*50*t) + randn(size(t));
+[b,a] = butter(2,0.2);
 y = filter(b,a,x);
 
 % preallocate the space for the psd results
