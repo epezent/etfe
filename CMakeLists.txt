@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(fft VERSION 0.1.0)
+project(ETFE VERSION 0.1.0)
 
 include(FetchContent) 
 FetchContent_Declare(mahi-gui GIT_REPOSITORY https://github.com/mahilab/mahi-gui.git) 
 FetchContent_MakeAvailable(mahi-gui)
 
-FetchContent_Declare(iir GIT_REPOSITORY https://github.com/epezent/iir1) 
+FetchContent_Declare(iir GIT_REPOSITORY https://github.com/berndporr/iir1) 
 FetchContent_MakeAvailable(iir)
 
-add_library(kissfft "kissfft/kiss_fft.h" "kissfft/kiss_fftr.h" "kissfft/kiss_fft.c" "kissfft/kiss_fftr.c")
-target_include_directories(kissfft PUBLIC "kissfft")
+add_library(etfe "include/ETFE.hpp" "kissfft/kiss_fft.h" "kissfft/kiss_fftr.h" "kissfft/kiss_fft.c" "kissfft/kiss_fftr.c")
+target_include_directories(etfe PUBLIC "include" "kissfft")
 
-add_executable(filter_toy "filter_toy.cpp" "ETFE.hpp")
-target_link_libraries(filter_toy mahi::gui kissfft iir::iir_static)
+add_executable(filter_toy "examples/filter_toy.cpp" "examples/filter_toy.rc")
+target_link_libraries(filter_toy mahi::gui etfe iir::iir_static)
 
-add_executable(etfe "etfe_cl.cpp" "ETFE.hpp")
-target_link_libraries(etfe mahi::util kissfft)
+add_executable(etfe_cl "examples/etfe_cl.cpp")
+target_link_libraries(etfe_cl mahi::util etfe)
+set_target_properties(etfe_cl PROPERTIES OUTPUT_NAME "etfe")
